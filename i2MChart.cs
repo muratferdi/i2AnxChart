@@ -14,7 +14,7 @@ namespace i2MChart
     using System.Xml.Serialization;
 
     /// <summary>
-    /// Created by Murat Ferdi GÜNEY (2022)
+    /// Created by Murat Ferdi GÃœNEY (2022)
     /// </summary>
     public class AnxChart
     {
@@ -23,87 +23,22 @@ namespace i2MChart
         {
             if (MyChart == null)
             {
-                MyChart = new Chart();
-                MyChart.ChartItemCollection = new List<ChartItem>();
-                MyChart.StrengthCollection = new List<Strength>();
-                MyChart.EntityTypeCollection = new List<EntityType>();
-                MyChart.LinkTypeCollection = new List<LinkType>();
+                ClearChart();
             }
         }
+
 
         public void ClearChart()
         {
             MyChart = new Chart();
-        }
-     
-        public void AddNodeToMChart(string id, string identity, string label, AnxEntityTypeEnum icon = AnxEntityTypeEnum.General, string description = "", DateTime? dateTime = null, byte[] image = null)
-        {
-            if (MyChart.ChartItemCollection.FirstOrDefault(x => x.Id == id) != null)
-            {
-                return;
-            }
 
-            #region Items_Ekleme
-
-            var picture1 = new IconPicture();
-            if (image != null)
-            {
-                picture1.Data = image;
-                picture1.DataGuid = Guid.NewGuid().ToString().ToLower();
-                picture1.PictureSizeMethod = PictureSizeMethodEnum.UseCustomSize;
-                picture1.CustomSize = 0;
-                picture1.DataLength = image.Length;
-                picture1.DataLengthSpecified = true;
-                picture1.Visible = false;
-            }
-
-            var end1 = new End() { Item = new Entity() { EntityId = id, Identity = identity, LabelIsIdentity = false, Item = new Icon() { TextX = 0, TextY = 16, IconStyle = new IconStyle() { IconPicture = (image == null ? null : picture1), Type = icon.ToString().Replace("_", " ") } } } };
-            var item1 = new ChartItem() { Description = description, Label = label, Item = end1, DateTime = (dateTime.HasValue ? dateTime.Value : DateTime.MinValue), DateSet = dateTime.HasValue, DateTimeSpecified = dateTime.HasValue };
-            MyChart.ChartItemCollection.Add(item1);
-            #endregion
-        }
-
-        public void AddNodeDetailsToMChart(string id, string cardText)
-        {
-            if (!string.IsNullOrEmpty(id))
-            {
-                var item = MyChart.ChartItemCollection.FirstOrDefault(x => x.Id == id);
-                if (item != null)
-                {
-                    if (!string.IsNullOrEmpty(cardText) && item.Item != null)
-                    {
-                        var end = (item.Item as End);
-                        if (end != null)
-                        {
-                            var entity = (end.Item as Entity);
-                            entity.CardCollection = new List<Card>();
-                            entity.CardCollection.Add(new Card() { Text = cardText });
-                        }
-                    }
-                }
-
-            }
-        }
-
-        public void AddEdgeToMChart(string label, string id1, string id2, AnxColors color = AnxColors.Black, DateTime? dateTime = null)
-        {
-            #region Link_Ekleme 
-            var link1 = new Link() { End1Id = id1.Trim(), End2Id = id2.Trim(), LinkStyle = new LinkStyle() { Type = "Link", ArrowStyle = ArrowStyleEnum.ArrowOnHead, ArrowStyleSpecified = true, StrengthReference = "Solid", LineColour = (uint)color, LineColourSpecified = true, MlStyle = MultipleLinkStyleEnum.MultiplicityMultiple, MlStyleSpecified = true } };
-            var linkItem1 = new ChartItem() { Label = label, Item = link1, DateTime = (dateTime.HasValue ? dateTime.Value : DateTime.MinValue), DateSet = dateTime.HasValue, DateTimeSpecified = dateTime.HasValue };
-            MyChart.ChartItemCollection.Add(linkItem1);
-            #endregion
-        }
-
-        public string ExportMChartToFile(string filePath)
-        {
-            string resultFile = string.Empty;
-            #region Chart_Tanýmlarý            
+            #region Chart_TanÄ±mlarÄ±            
             MyChart.SchemaVersion = "7.0.0.1";
             MyChart.GridHeightSize = 0.2D;
             MyChart.GridWidthSize = 0.2D;
             MyChart.UseDefaultLinkSpacingWhenDragging = false;
-            MyChart.GridVisibleOnAllViews = false;
-            MyChart.ShowAllFlag = false;
+            MyChart.GridVisibleOnAllViews = true;
+            MyChart.ShowAllFlag = true;
             MyChart.ShowPages = false;
             MyChart.BackColour = 16777215;
             MyChart.DefaultLinkSpacing = 0.2D;
@@ -120,7 +55,7 @@ namespace i2MChart
             MyChart.TypeIconDrawingMode = TypeIconDrawingModeEnum.HighQuality;
             MyChart.WiringDistanceFar = 0.2D;
             MyChart.IdReferenceLinking = false;
-            MyChart.IsBackColourFilled = false;
+            MyChart.IsBackColourFilled = true;
             MyChart.SnapToGrid = true;
             MyChart.LabelSumNumericLinks = false;
             MyChart.LabelRule = LabelMergeAndPasteRuleEnum.LabelRuleMerge;
@@ -128,9 +63,73 @@ namespace i2MChart
             MyChart.MsxmlVersion = "4.20.9818.0";
             #endregion
 
-            #region CollectionTanýmlarý 
+            MyChart.ChartItemCollection = new List<ChartItem>();
+            MyChart.StrengthCollection = new List<Strength>();
+            MyChart.EntityTypeCollection = new List<EntityType>();
             MyChart.StrengthCollection.Add(new Strength() { Id = "Solid", Name = "Solid", DotStyle = DotStyleEnum.DotStyleSolid });
 
+        }
+
+        public string AddNodeToMChart(string id, string label, AnxEntityTypeEnum icon = AnxEntityTypeEnum.General, AnxColors color = AnxColors.None, string description = "", DateTime? dateTime = null, byte[] image = null)
+        {
+            if (!string.IsNullOrEmpty(id))
+            {
+                id = BitConverter.ToString(System.Security.Cryptography.MD5.Create("MD5").ComputeHash(Encoding.UTF8.GetBytes(id))).Replace("-", "");
+
+                var idList = MyChart.ChartItemCollection.Where(x => x.Item is End).Select(x => x.Item as End).Where(x => x.Item is Entity).Select(x => x.Item as Entity).FirstOrDefault(x => x.EntityId == id);
+                if (idList != null)
+                {
+                    return id;
+                }
+
+                #region Items_Ekleme
+
+                var picture1 = new IconPicture();
+                if (image != null)
+                {
+                    picture1.Data = image;
+                    picture1.DataGuid = Guid.NewGuid().ToString().ToLower();
+                    picture1.PictureSizeMethod = PictureSizeMethodEnum.UseCustomSize;
+                    picture1.CustomSize = 0;
+                    picture1.DataLength = image.Length;
+                    picture1.DataLengthSpecified = true;
+                    picture1.Visible = false;
+                }
+
+                
+                var end1 = new End() { Item = new Entity() { EntityId = id, Identity = id, LabelIsIdentity = false, Item = new Icon() {TextX = 0, TextY = 16, IconStyle = new IconStyle() { IconShadingColourSpecified = (color != AnxColors.None), IconShadingColour = (int)color, IconPicture = (image == null ? null : picture1), Type = icon.ToString().Replace("7", "-").Replace("8", "(").Replace("9", ")").Replace("_", " ") } } } };
+                var item1 = new ChartItem() { Description = description, Label = label, Item = end1, DateTime = (dateTime.HasValue ? dateTime.Value : DateTime.MinValue), DateSet = dateTime.HasValue, DateTimeSpecified = dateTime.HasValue };
+                MyChart.ChartItemCollection.Add(item1);
+                #endregion
+            }
+            return id;
+        }
+
+        
+        public void AddEdgeToMChart(string label, string id1, string id2, AnxColors color = AnxColors.Black, DateTime? dateTime = null)
+        {
+            #region Link_Ekleme 
+            if (!string.IsNullOrEmpty(id1) && !string.IsNullOrEmpty(id2))
+            {
+                var idList = MyChart.ChartItemCollection.Where(x => x.Item is Link).Select(x => x.Item as Link).FirstOrDefault(x => x.End1Id == id1 && x.End2Id == id2);
+                if (idList != null)
+                {
+                    return;
+                }
+
+                var link1 = new Link() { End1Id = id1.ToUpper().Trim(), End2Id = id2.ToUpper().Trim(), LinkStyle = new LinkStyle() { Type = "Link", ArrowStyle = ArrowStyleEnum.ArrowOnHead, ArrowStyleSpecified = true, StrengthReference = "Solid", LineColour = (uint)color,LineColourSpecified = true, MlStyle = MultipleLinkStyleEnum.MultiplicityMultiple, MlStyleSpecified = true } };
+                var linkItem1 = new ChartItem() { Label = label, Item = link1, DateTime = (dateTime.HasValue ? dateTime.Value : DateTime.MinValue), DateSet = dateTime.HasValue, DateTimeSpecified = dateTime.HasValue };
+                MyChart.ChartItemCollection.Add(linkItem1);
+            }
+            #endregion
+        }
+
+        public string ExportMChartToFile(string filePath)
+        {
+            string resultFile = string.Empty;
+
+            #region CollectionTanÄ±mlarÄ± 
+            MyChart.LinkTypeCollection = new List<LinkType>();
             var icons = MyChart.ChartItemCollection.Where(x => x.Item is End).Select(x => x.Item as End).Where(x => x.Item is Entity).Select(x => x.Item as Entity).Where(x => x.Item is Icon).Select(x => x.Item as Icon).Where(x => x.IconStyle != null).Select(x => x.IconStyle.Type).ToList();
             foreach (var item in icons)
             {
@@ -166,15 +165,151 @@ namespace i2MChart
 
     public enum AnxColors
     {
+        None = -1,
+        AliceBlue = 16775408,
+        AntiqueWhite = 14150650,
+        Aqua = 16776960,
+        Aquamarine = 13959039,
+        Azure = 16777200,
+        Beige = 14480885,
+        Bisque = 12903679,
         Black = 0,
+        BlanchedAlmond = 13495295,
         Blue = 16711680,
-        Gray = 12500670,
-        Green = 32768,
+        BlueViolet = 14822282,
+        Brown = 2763429,
+        BurlyWood = 8894686,
+        CadetBlue = 10526303,
+        Chartreuse = 65407,
+        Chocolate = 1993170,
+        Coral = 5275647,
+        CornflowerBlue = 15570276,
+        Cornsilk = 14481663,
+        Crimson = 3937500,
+        DarkBlue = 9109504,
+        DarkCyan = 9145088,
+        DarkGoldenrod = 755384,
+        DarkGray = 11119017,
+        DarkGreen = 100,
+        DarkKhaki = 7059389,
+        DarkMagenta = 9109643,
+        DarkOliveGreen = 3107669,
+        DarkOrange = 36095,
+        DarkOrchid = 13382297,
+        DarkRed = 139,
+        DarkSalmon = 8034025,
+        DarkSeaGreen = 9157775,
+        DarkSlateBlue = 9125192,
+        DarkSlateGray = 5197615,
+        DarkTurquoise = 13749760,
+        DarkViolet = 13828244,
+        DeepPink = 9639167,
+        DeepSkyBlue = 16760576,
+        DimGray = 6908265,
+        DodgerBlue = 16748574,
+        Firebrick = 2237106,
+        FloralWhite = 15792895,
+        ForestGreen = 2263842,
+        Fuchsia = 16711935,
+        Gainsboro = 14474460,
+        GhostWhite = 16775416,
+        Gold = 55295,
+        Goldenrod = 2139610,
+        Gray = 8421504,
+        Green = 128,
+        GreenYellow = 3145645,
+        Honeydew = 15794160,
+        HotPink = 11823615,
+        IndianRed = 6053069,
+        Indigo = 8519755,
+        Ivory = 15794175,
+        Khaki = 9234160,
+        Lavender = 16443110,
+        LavenderBlush = 16118015,
+        LawnGreen = 64636,
+        LemonChiffon = 13499135,
+        LightBlue = 15128749,
+        LightCoral = 8421616,
+        LightCyan = 16777184,
+        LightGoldenrodYellow = 13826810,
+        LightGreen = 9498256,
+        LightGray = 13882323,
+        LightPink = 12695295,
+        LightSalmon = 8036607,
+        LightSeaGreen = 11186720,
+        LightSkyBlue = 16436871,
+        LightSlateGray = 10061943,
+        LightSteelBlue = 14599344,
+        LightYellow = 14745599,
+        Lime = 65280,
+        LimeGreen = 3329330,
+        Linen = 15134970,
+        Maroon = 128,
+        MediumAquamarine = 11193702,
+        MediumBlue = 13434880,
+        MediumOrchid = 13850042,
+        MediumPurple = 14381203,
+        MediumSeaGreen = 7451452,
+        MediumSlateBlue = 15624315,
+        MediumSpringGreen = 10156544,
+        MediumTurquoise = 13422920,
+        MediumVioletRed = 8721863,
+        MidnightBlue = 7346457,
+        MintCream = 16449525,
+        MistyRose = 14804223,
+        Moccasin = 11920639,
+        NavajoWhite = 11394815,
+        Navy = 128,
+        OldLace = 15136253,
+        Olive = 32896,
+        OliveDrab = 2330219,
+        Orange = 42495,
+        OrangeRed = 17919,
+        Orchid = 14053594,
+        PaleGoldenrod = 11200750,
+        PaleGreen = 10025880,
+        PaleTurquoise = 15658671,
+        PaleVioletRed = 9662683,
+        PapayaWhip = 14020607,
+        PeachPuff = 12180223,
+        Peru = 4163021,
+        Pink = 13353215,
+        Plum = 14524637,
+        PowderBlue = 15130800,
+        Purple = 8388736,
         Red = 255,
+        RosyBrown = 9408444,
+        RoyalBlue = 26945,
+        SaddleBrown = 1262987,
+        Salmon = 7504122,
+        SandyBrown = 6333684,
+        SeaGreen = 5737262,
+        SeaShell = 15660543,
+        Sienna = 2970272,
+        Silver = 12632256,
+        SkyBlue = 15453831,
+        SlateBlue = 13458026,
+        SlateGray = 9470064,
+        Snow = 16448255,
+        SpringGreen = 8388352,
+        SteelBlue = 11829830,
+        Tan = 9221330,
+        Teal = 32896,
+        Thistle = 14204888,
+        Tomato = 4678655,
+        Turquoise = 13688896,
+        Violet = 15631086,
+        Wheat = 11788021,
         White = 16777215,
-        Yellow = 65535
+        WhiteSmoke = 16119285,
+        Yellow = 65535,
+        YellowGreen = 3329434,
+
     }
 
+    /// <summary>
+    /// C:\Program Files (x86)\Common Files\i2 Shared\Images 8.5\Basic\Icons
+    /// </summary>
     public enum AnxEntityTypeEnum
     {
         Account,
@@ -414,6 +549,8 @@ namespace i2MChart
         Gaspump,
         General_group,
         General,
+        General_7_end,
+        General_7_start,
         Generic_Entity_vlv,
         Girl,
         Govrment,
