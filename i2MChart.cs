@@ -66,14 +66,18 @@ namespace i2MChart
             MyChart.StrengthCollection = new List<Strength>();
             MyChart.EntityTypeCollection = new List<EntityType>();
             MyChart.StrengthCollection.Add(new Strength() { Id = "Solid", Name = "Solid", DotStyle = DotStyleEnum.DotStyleSolid });
-
         } 
 
+        public static string GenerateTextSHA1(string metin)
+        {
+	        return BitConverter.ToString(System.Security.Cryptography.SHA1.Create().ComputeHash(UTF8Encoding.UTF8.GetBytes(metin))).Replace("-", string.Empty);
+        }
+        
         public string FindNodeMChart(string id)
         {
             if (!string.IsNullOrEmpty(id))
             {
-                id = HashYardimcisi.GenerateTextSHA1(id);
+                id = GenerateTextSHA1(id);
                 var idList = MyChart.ChartItemCollection.Where(x => x.Item is End).Select(x => x.Item as End).Where(x => x.Item is Entity).Select(x => x.Item as Entity).FirstOrDefault(x => x.EntityId == id);
                 if (idList != null)
                 {
@@ -91,7 +95,7 @@ namespace i2MChart
         {
             if (!string.IsNullOrEmpty(id))
             {
-                id = HashYardimcisi.GenerateTextSHA1(id);
+                id = GenerateTextSHA1(id);
                 var idList = MyChart.ChartItemCollection.Where(x => x.Item is End).Select(x => x.Item as End).Where(x => x.Item is Entity).Select(x => x.Item as Entity).FirstOrDefault(x => x.EntityId == id);
                 if (idList != null)
                 {
