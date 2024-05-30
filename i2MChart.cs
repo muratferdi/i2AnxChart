@@ -1,6 +1,5 @@
 namespace i2MChart
 {
-
     using System;
     using System.Collections;
     using System.Collections.Generic;
@@ -68,14 +67,31 @@ namespace i2MChart
             MyChart.EntityTypeCollection = new List<EntityType>();
             MyChart.StrengthCollection.Add(new Strength() { Id = "Solid", Name = "Solid", DotStyle = DotStyleEnum.DotStyleSolid });
 
+        } 
+
+        public string FindNodeMChart(string id)
+        {
+            if (!string.IsNullOrEmpty(id))
+            {
+                id = HashYardimcisi.GenerateTextSHA1(id);
+                var idList = MyChart.ChartItemCollection.Where(x => x.Item is End).Select(x => x.Item as End).Where(x => x.Item is Entity).Select(x => x.Item as Entity).FirstOrDefault(x => x.EntityId == id);
+                if (idList != null)
+                {
+                    return id;
+                }
+                else
+                {
+                    return null;
+                }
+            }
+            return id;
         }
 
         public string AddNodeToMChart(string id, string label, AnxEntityTypeEnum icon = AnxEntityTypeEnum.General, AnxColors color = AnxColors.None, string description = "", DateTime? dateTime = null, byte[] image = null)
         {
             if (!string.IsNullOrEmpty(id))
             {
-                id = BitConverter.ToString(System.Security.Cryptography.MD5.Create("MD5").ComputeHash(Encoding.UTF8.GetBytes(id))).Replace("-", "");
-
+                id = HashYardimcisi.GenerateTextSHA1(id);
                 var idList = MyChart.ChartItemCollection.Where(x => x.Item is End).Select(x => x.Item as End).Where(x => x.Item is Entity).Select(x => x.Item as Entity).FirstOrDefault(x => x.EntityId == id);
                 if (idList != null)
                 {
@@ -85,19 +101,19 @@ namespace i2MChart
                 #region Items_Ekleme
 
                 var picture1 = new IconPicture();
+                //image = File.ReadAllBytes(@"C:\Publish\murat.png");
                 if (image != null)
                 {
                     picture1.Data = image;
-                    picture1.DataGuid = Guid.NewGuid().ToString().ToLower();
+                    //picture1.DataGuid = Guid.NewGuid().ToString().ToLower();
                     picture1.PictureSizeMethod = PictureSizeMethodEnum.UseCustomSize;
-                    picture1.CustomSize = 0;
+                    picture1.CustomSize = 100D;
                     picture1.DataLength = image.Length;
-                    picture1.DataLengthSpecified = true;
-                    picture1.Visible = false;
+                    picture1.Visible = true;
                 }
 
-                
-                var end1 = new End() { Item = new Entity() { EntityId = id, Identity = id, LabelIsIdentity = false, Item = new Icon() {TextX = 0, TextY = 16, IconStyle = new IconStyle() { IconShadingColourSpecified = (color != AnxColors.None), IconShadingColour = (int)color, IconPicture = (image == null ? null : picture1), Type = icon.ToString().Replace("7", "-").Replace("8", "(").Replace("9", ")").Replace("_", " ") } } } };
+
+                var end1 = new End() { Item = new Entity() { EntityId = id, Identity = id, LabelIsIdentity = false, Item = new Icon() { TextX = 0, TextY = 16, IconStyle = new IconStyle() { IconShadingColourSpecified = (color != AnxColors.None), IconShadingColour = (int)color, Enlargement = IconEnlargementEnum.ICEnlargeSingle, IconPicture = (image == null ? null : picture1), Type = icon.ToString().Replace("7", "-").Replace("8", "(").Replace("9", ")").Replace("_", " ") } } } };
                 var item1 = new ChartItem() { Description = description, Label = label, Item = end1, DateTime = (dateTime.HasValue ? dateTime.Value : DateTime.MinValue), DateSet = dateTime.HasValue, DateTimeSpecified = dateTime.HasValue };
                 MyChart.ChartItemCollection.Add(item1);
                 #endregion
@@ -105,11 +121,34 @@ namespace i2MChart
             return id;
         }
 
-        
+        public void AddNodeDetailsToMChart(string id1, string addText, string tip, bool suffix = false)
+        {
+            if (!string.IsNullOrEmpty(id1) && !string.IsNullOrEmpty(addText))
+            {
+                if (MyChart.AttributeClassCollection == null)
+                {
+                    MyChart.AttributeClassCollection = new List<AttributeClass>();
+                }
+                if (MyChart.AttributeClassCollection.FirstOrDefault(x => x.Name == tip) == null)
+                {
+                    MyChart.AttributeClassCollection.Add(new AttributeClass() { UserCanAdd = true, Name = tip, Type = AttributeTypeEnum.AttText, Visible = true, ShowValue = true, ShowSuffix = suffix, ShowPrefix = !suffix, Prefix = !suffix ? tip + " " : null, Suffix = suffix ? " " + tip : null });
+                }
+
+                var item = MyChart.ChartItemCollection.Where(x => (x.Item is End) && ((x.Item as End).Item is Entity) && ((x.Item as End).Item as Entity).EntityId == id1).FirstOrDefault();
+                if (item != null)
+                {
+                    if (!string.IsNullOrEmpty(addText))
+                    {
+                        item.AttributeCollection = new List<Attribute>() { new Attribute() { Value = addText, AttributeClass = tip } };
+                    }
+                }
+            }
+        }
+
         public void AddEdgeToMChart(string label, string id1, string id2, AnxColors color = AnxColors.Black, DateTime? dateTime = null)
         {
             #region Link_Ekleme 
-            if (!string.IsNullOrEmpty(id1) && !string.IsNullOrEmpty(id2))
+            if (!string.IsNullOrEmpty(id1) && !string.IsNullOrEmpty(id2) && id1 != id2)
             {
                 var idList = MyChart.ChartItemCollection.Where(x => x.Item is Link).Select(x => x.Item as Link).FirstOrDefault(x => x.End1Id == id1 && x.End2Id == id2);
                 if (idList != null)
@@ -117,7 +156,7 @@ namespace i2MChart
                     return;
                 }
 
-                var link1 = new Link() { End1Id = id1.ToUpper().Trim(), End2Id = id2.ToUpper().Trim(), LinkStyle = new LinkStyle() { Type = "Link", ArrowStyle = ArrowStyleEnum.ArrowOnHead, ArrowStyleSpecified = true, StrengthReference = "Solid", LineColour = (uint)color,LineColourSpecified = true, MlStyle = MultipleLinkStyleEnum.MultiplicityMultiple, MlStyleSpecified = true } };
+                var link1 = new Link() { End1Id = id1.ToUpper().Trim(), End2Id = id2.ToUpper().Trim(), LinkStyle = new LinkStyle() { Type = "Link", ArrowStyle = ArrowStyleEnum.ArrowOnHead, ArrowStyleSpecified = true, StrengthReference = "Solid", LineColour = (uint)color, LineColourSpecified = true, MlStyle = MultipleLinkStyleEnum.MultiplicityMultiple, MlStyleSpecified = true } };
                 var linkItem1 = new ChartItem() { Label = label, Item = link1, DateTime = (dateTime.HasValue ? dateTime.Value : DateTime.MinValue), DateSet = dateTime.HasValue, DateTimeSpecified = dateTime.HasValue };
                 MyChart.ChartItemCollection.Add(linkItem1);
             }
@@ -139,7 +178,7 @@ namespace i2MChart
                 }
             }
             MyChart.LinkTypeCollection.Add(new LinkType() { Colour = (int)AnxColors.Black, Name = "Link" });
-            #endregion
+            #endregion            
 
             XmlSerializer serializer = new XmlSerializer(typeof(Chart));
             XmlWriterSettings settings = new XmlWriterSettings();
@@ -1410,7 +1449,7 @@ namespace i2MChart
         }
 
         [System.Xml.Serialization.XmlAttributeAttribute()]
-        [System.ComponentModel.DefaultValueAttribute(true)]
+        [System.ComponentModel.DefaultValueAttribute(false)]
         public bool ShowValue
         {
             get
@@ -1478,7 +1517,7 @@ namespace i2MChart
         }
 
         [System.Xml.Serialization.XmlAttributeAttribute()]
-        [System.ComponentModel.DefaultValueAttribute(true)]
+        [System.ComponentModel.DefaultValueAttribute(false)]
         public bool Visible
         {
             get
@@ -7511,13 +7550,12 @@ namespace i2MChart
 
         public IconPicture()
         {
-            this.customSizeField = 1D;
+            this.customSizeField = 100D;
             this.pictureSizeMethodField = PictureSizeMethodEnum.UseEnlargement;
-            this.visibleField = false;
+            this.visibleField = true;
         }
 
         [System.Xml.Serialization.XmlAttributeAttribute()]
-        [System.ComponentModel.DefaultValueAttribute(1D)]
         public double CustomSize
         {
             get
@@ -7583,7 +7621,6 @@ namespace i2MChart
         }
 
         [System.Xml.Serialization.XmlAttributeAttribute()]
-        [System.ComponentModel.DefaultValueAttribute(PictureSizeMethodEnum.UseEnlargement)]
         public PictureSizeMethodEnum PictureSizeMethod
         {
             get
